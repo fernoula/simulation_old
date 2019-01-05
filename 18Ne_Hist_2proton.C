@@ -46,8 +46,12 @@ using namespace std;
   gSystem->Load("TwoBodySimulator_kinematics_cpp.so");
   //gSystem->Load("TwoBodySimulator_test_finalM2_cpp.so");
 
+  //cout << " malakies1 " << endl;
+ 
+  
   Simulator* S = new Simulator("18Nesrim/18Ne_in_HeCO2_356Torr_18Nerun_09122018.eloss","18Nesrim/H_in_HeCO2_379Torr_allruns_09122018.eloss","18Nesrim/21Na_in_HeCO2_356Torr_18Nerun_10082018.eloss","18Nesrim/20Ne_in_HeCO2_356Torr_18Nerun_12242018.eloss","H_in_Si.txt","WorldCoordinates2018Dec4","pcr_list_07192018.dat");   //uses the new zr-offsets for the SX3s 2.5 & 14.9 cm 
 
+  
  
   CS *cross = new CS;
   cross->ReadFile("cross.txt");
@@ -69,6 +73,12 @@ using namespace std;
   TCanvas* Tally3=new TCanvas("Ne3","Ne3",300,100,1500,1500);
   Tally3->Divide(2,2);
 
+  TCanvas* Tally4=new TCanvas("Ne4","Ne4",300,100,1500,1500);
+  Tally4->Divide(2,2);
+
+  TCanvas* Tally5=new TCanvas("Ne5","Ne5",300,100,1500,1500);
+  Tally5->Divide(2,1);
+
 
   TH1F* grb1 = new TH1F("grb1","",100,0,100);
   TH1F* grb2 = new TH1F("grb2","",100,0,100);
@@ -80,6 +90,7 @@ using namespace std;
 
   
   TH1F* grEx = new TH1F("grEx","",100,-10,10);
+  TH1F* grEx_20Ne = new TH1F("grEx_20Ne","",100,-10,10);
 
 
   TGraph* grb = new TGraph();
@@ -105,6 +116,12 @@ using namespace std;
   TGraph* grResprtheta2 = new TGraph();
 
   TGraph* grSecp = new TGraph();
+  TGraph* grSecp2 = new TGraph();
+
+  TGraph* grSim1_secP = new TGraph();
+  TGraph* grSim2_secP = new TGraph();
+  TGraph* grSim3_secP = new TGraph();
+  TGraph* grBeam_secP = new TGraph();
 
   
   /*
@@ -130,8 +147,6 @@ using namespace std;
   
   
   S->SetMasses(mB, mT, mL, mH, mH2);
-
-  
   
   S->SetBeamEnergyRange(emin,e);
 
@@ -140,15 +155,18 @@ using namespace std;
   Int_t DetID = -1;
   Float_t Xp,Yp,Zp,Xpc,Ypc,Zpc;
   Float_t Xp2,Yp2,Zp2,Xpc2,Ypc2,Zpc2;
-  Float_t EL_final, EH_final, EL_afterSi, EL_detected_1, EL_detected_2;
+  Float_t EL_final, EL2_final, EH_final, EL_afterSi, EL_detected_1, EL_detected_2;
   Float_t DL, DL_Si;
   
   Float_t t, x_br, y_br, z_br, z_sim;
+  Float_t x_br2, y_br2, z_br2, z_sim2;
   Float_t Beam_Path, Beam_Path_rec, Beam_Path_sim, Light_Particle_Path ,Heavy_ion_Particle_Path;
   Float_t K_brr_rec, K_brr_sim, K_lrr ,K_hrr;
-
-
-  Float_t theta_rec, phi_rec, path_rec, path_sim, Ex_21Na;
+  Float_t Beam_Path_rec2, Beam_Path_sim2, K_brr_rec2, K_brr_sim2;
+  Float_t BeamRec_20Ne;
+  
+  Float_t theta_rec, phi_rec, path_rec, path_sim, Ex_21Na, Ex_20Ne;
+  Float_t theta_rec2, phi_rec2, path_rec2, path_sim2;
   Float_t L_Si,L_Si1,L_Si2;
   Float_t EL_fin;
   Float_t EL_Ni,EL_Nf;
@@ -162,21 +180,21 @@ using namespace std;
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
   /////////////------------Increments-------------/////////////
  
   int Num_Events = 0, EventsOfInt = 0;
   int  FailCount = 0, FailCount1 = 0, FailCount2 = 0, FailCount3 = 0, FailCount4 = 0;
   //--FailCounts for Second Proton events
-  int FailCount_1 = 0, FailCount_2 = 0, FailCount_3 = 0;
+  int FailCount_1 = 0, FailCount_2 = 0, FailCount_3 = 0, FailCount_4 = 0;
 
   //---------
   int nb=0,mm=0,ring=0,npR1=0,npR2=0,nd1=0,nd2=0,nRec=0,nRec_q=0,nRec_x3=0;
   int sim_ex1=0, sim_ex2=0, sim_p1=0, sim_p2=0, sim_p3=0, beam_p=0;
-  int Secp=0;
+  int sim_p1_2=0, sim_p2_2=0, sim_p3_2=0, beam_p_2=0;
+  int Secp=0, Secp2=0;
 
   int j=0;
-  const Int_t n=1000;
+  const Int_t n=100;
   
   TRandom3 *rand_ = new TRandom3();
  
@@ -198,8 +216,7 @@ using namespace std;
     
     //if(S->FinalE > 22)
     //  cout << " BeamEnrgy is : " << S->FinalE << endl;
-    
-   
+     
     //if(S->FinalE<10 || S->FinalE>35)
     //  continue;
 
@@ -209,7 +226,7 @@ using namespace std;
     }
 
     if(S->ke_L_lab <= 0.5){ // these protons have such small En when created that will not reach-detected by the time they reach the Si
-      FailCount4++;
+      FailCount3++;
       continue;
     }
     
@@ -217,9 +234,11 @@ using namespace std;
     //grb->SetPoint(nb,(S->theta_L)*180/TMath::Pi(),S->ke_L_lab);   //pure kinematics before hits in detectors
     //nb++;
     
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
    
-
+    // given a theta & phi angle from the kinematics of the light particle
+    // find the hitting points of Si & PC detectors
+    
     bool foundQQQ = S->GetQQQ3FwdCoord(Xp, Yp, Zp, Xpc, Ypc, Zpc, DetID, S->theta_L, S->phi_L);  
     bool foundSX3 = S->GetSX3Coord(Xp, Yp, Zp, Xpc, Ypc, Zpc, S->theta_L, S->phi_L); 
    
@@ -244,7 +263,7 @@ using namespace std;
    
    if(EL_final <= 0.5)   // the silicon detectors' threshold is 0.5MeV, so anything below that is not useful
     {
-       FailCount3++;
+       FailCount4++;
        continue;
      }
 
@@ -311,36 +330,96 @@ using namespace std;
 	grSim_ex2->SetPoint(sim_ex2,K_brr_rec,Ex_21Na);
 	sim_ex2++;
 	
-
        }
 
-     if(abs((S->Ex)-Ex_21Na) > 2.0)
+     /*if(abs((S->Ex)-Ex_21Na) > 2.0)
        cout << " Ex_sim: " << S->Ex << " Ex_rec: " << Ex_21Na 
 	    << " Theta_sim: " << S->theta_L*180/TMath::Pi() << " Theta_rec: " << theta_rec*180/TMath::Pi() 
 	    << " IntP_sim: " << z_sim << " IntP_rec: " << z_br 
 	    << " BeamEnergy_sim: " << S->FinalE 
-	    << " p energy: " << S->ke_L_lab << endl;
+	    << " p energy: " << S->ke_L_lab << endl;*/
 
 
      //---just to check that the right proton energies are being analyzed
      if(EL_final<=0.5)
        cout << " EL_final > 0.5 " << endl;
 
-     //if(S->Ex>4.0)
+    
+     if(!S->SecondProton(S->ee_H_lab, S->Px_H_lab, S->Py_H_lab, S->Pz_H_lab, S->Ex))
        {
-	 //S->SecondProton(S->ee_H_lab, S->Ex);
-	 S->SecondProton(S->ee_H_lab, S->Px_H_lab, S->Py_H_lab, S->Pz_H_lab, S->Ex);
-	 //cout << " proton1: " << S->ee_L_lab << " Heavy1: " << S->ee_H_lab << " Ex: " <<  S->Ex << endl;
-	 grSecp->SetPoint(Secp, S->ke_L_lab, S->ke_1_lab);
-	 Secp++;
+	 FailCount_1++;
+	 continue;
        }
-
+     
+     if(S->ke_1_lab<=0.5)
+       {
+	 FailCount_2++;
+	 continue;
+       }
+     
+     bool foundQQQ_secP = S->GetQQQ3FwdCoord(Xp2, Yp2, Zp2, Xpc2, Ypc2, Zpc2, DetID, S->theta_h1, S->phi_h1);  
+     bool foundSX3_secP = S->GetSX3Coord(Xp2, Yp2, Zp2, Xpc2, Ypc2, Zpc2, S->theta_h1, S->phi_h1); 
+    
+   if(!S->GetQQQ3FwdCoord(Xp2, Yp2, Zp2, Xpc2, Ypc2, Zpc2, DetID, S->theta_h1, S->phi_h1))
+    {
+     if(!S->GetSX3Coord(Xp2, Yp2, Zp2, Xpc2, Ypc2, Zpc2, S->theta_h1, S->phi_h1))
+     {
        
+       FailCount_3++;  // how many events are lost because of not hitting a silicon detector due to geometrical gaps
+        continue;
+     }
+    }
+
+   //cout << " proton1: " << S->ee_L_lab << " Heavy1: " << S->ee_H_lab << " Ex: " <<  S->Ex << endl;
+   grSecp->SetPoint(Secp, S->theta_L, S->theta_h1);
+   Secp++;
+   
+   S->Reac_point_Reconstruction(x_br2, y_br2, z_br2, theta_rec2, path_rec2, phi_rec2, Xp2, Yp2, Zp2, Xpc2, Ypc2, Zpc2);
+
+   S->Simulation_Parameters(z_sim2, path_sim2, EL2_final, Xp2, Yp2, Zp2);
+
+   if(EL2_final <= 0.5)   // the silicon detectors' threshold is 0.5MeV, so anything below that is not useful
+    {
+       FailCount_4++;
+       continue;
+    }
+   
+   
+   Beam_Path_rec2 = sqrt( x_br*x_br + y_br*y_br + pow((S->La)-z_br2,2)); 
+   Beam_Path_sim2 = sqrt( x_br*x_br + y_br*y_br + pow((S->La)-z_sim2,2)); 
+     
+   K_brr_rec2 = S->IonInGas->GetLookupEnergy(e, Beam_Path_rec2);
+   K_brr_sim2 = S->IonInGas->GetLookupEnergy(e, Beam_Path_sim2);
+
+   //compare reconstructed to simulated values
+   grBeam_secP -> SetPoint(beam_p_2,K_brr_sim2,K_brr_rec2);
+   beam_p_2++;
+
+   grSim1_secP->SetPoint(sim_p1_2,abs(z_br2-z_sim2),Zp2);  
+   sim_p1_2++;	
+
+   grSim2_secP->SetPoint(sim_p2_2,abs(z_br2-z_sim2),S->theta_h1*180/TMath::Pi()); 
+   //grSim2->SetPoint(sim_p2,S->theta_L*180/TMath::Pi(),theta_rec*180/TMath::Pi());  
+   sim_p2_2++;
+
+   grSim3_secP->SetPoint(sim_p3_2,z_sim2,z_br2);  
+   sim_p3_2++;
+   
+   S->RecBeam_SecProton(BeamRec_20Ne, EL_final, EL2_final,theta_rec, theta_rec2,
+			path_rec, path_rec2,phi_rec, phi_rec2);
+
+   grSecp2->SetPoint(Secp2, K_brr_sim2, BeamRec_20Ne);
+   Secp2++;
+   
+   S->Reconstruct_20Ne(Ex_20Ne, EL_final, EL2_final,theta_rec, theta_rec2,
+   		       path_rec, path_rec2,phi_rec, phi_rec2, z_br2);
+
+   grEx_20Ne->Fill(Ex_20Ne);
 
 ///////////////////--------------j++ ending--------------------////////////////////////////////////////////
 
       j++;
-      cout << "\rDone: " <<setprecision(2) << fixed << showpoint <<  j/double(n)*100 << "% (Efficiency: " <<double(j*100)/(j+FailCount2+FailCount3)<<"%)"<<  " " << Num_Events << "                               " << flush;
+      cout << "\rDone: " <<setprecision(2) << fixed << showpoint <<  j/double(n)*100 << "% (Efficiency: " <<double(j*100)/(j+FailCount2+FailCount3)<<"%)"<<  " " << Num_Events << " " << flush;
   }
 
   cout << endl;
@@ -356,7 +435,7 @@ using namespace std;
    cout << "Kinematics 2 protons FailCount_1: " << FailCount_1 << endl;
    cout << "2 proton_En from kinematics less than 0.5MeV - FailCount_2: " << FailCount_2 << endl;
    cout << "2 proton Not making it to detector-Geometry FailCount_3: " << FailCount_3 << endl;
-
+   cout << "2 proton_En at the detector less than 0.5MeV - FailCount4: " << FailCount_4 << endl;
    Efficiency = n*100./(n+(FailCount+FailCount1+FailCount2+FailCount3));
 
    cout<<"Efficiency = "<< (double)Efficiency <<endl;
@@ -600,8 +679,8 @@ using namespace std;
   grSecp->SetMarkerColor(2);
   grSecp->SetMarkerSize(1.5);
   grSecp->SetMarkerStyle(7);
-  grSecp->GetXaxis()->SetTitle("proton1 (MeV)");
-  grSecp->GetYaxis()->SetTitle("proton2 (MeV)");
+  grSecp->GetXaxis()->SetTitle("theta proton1 (MeV)");
+  grSecp->GetYaxis()->SetTitle("theta proton2 (MeV)");
   grSecp->GetXaxis()->SetLabelFont(62);
   grSecp->GetXaxis()->SetLabelSize(0.047);
   grSecp->GetXaxis()->SetTitleSize(0.048);
@@ -611,9 +690,116 @@ using namespace std;
   grSecp->GetYaxis()->SetTitleSize(0.048);
   grSecp->GetYaxis()->SetTitleFont(62);
   grSecp->Draw("AP");
-   
- 
+  
+  
+  Tally4->cd(1);
+  grBeam_secP->SetMarkerColor(2);
+  grBeam_secP->SetMarkerSize(1.0);
+  grBeam_secP->SetMarkerStyle(7); 
+  grBeam_secP->GetXaxis()->SetTitle("Beam_sim 2nd p (MeV)");
+  grBeam_secP->GetYaxis()->SetTitle("Beam_rec 2nd p (MeV)"); 
+  grBeam_secP->GetXaxis()->SetLabelFont(62);
+  grBeam_secP->GetXaxis()->SetLabelSize(0.047);
+  grBeam_secP->GetXaxis()->SetTitleSize(0.048);
+  grBeam_secP->GetXaxis()->SetTitleFont(62);
+  grBeam_secP->GetYaxis()->SetLabelFont(62);
+  grBeam_secP->GetYaxis()->SetLabelSize(0.047);
+  grBeam_secP->GetYaxis()->SetTitleSize(0.048);
+  grBeam_secP->GetYaxis()->SetTitleFont(62);
+  grBeam_secP->Draw("AP");
+  fun->SetLineColor(1);
+  fun->SetLineWidth(2);
+  fun->Draw("same");
 
+
+   
+  Tally4->cd(2);
+  grSim1_secP->SetMarkerColor(2);
+  grSim1_secP->SetMarkerSize(1.5);
+  grSim1_secP->SetMarkerStyle(7);
+  grSim1_secP->GetXaxis()->SetTitle("z_Rec - z_sim 2nd p (cm)");
+  grSim1_secP->GetYaxis()->SetTitle("z_detector 2nd p (cm)");
+  grSim1_secP->GetXaxis()->SetLabelFont(62);
+  grSim1_secP->GetXaxis()->SetLabelSize(0.047);
+  grSim1_secP->GetXaxis()->SetTitleSize(0.048);
+  grSim1_secP->GetXaxis()->SetTitleFont(62);
+  grSim1_secP->GetYaxis()->SetLabelFont(62);
+  grSim1_secP->GetYaxis()->SetLabelSize(0.047);
+  grSim1_secP->GetYaxis()->SetTitleSize(0.048);
+  grSim1_secP->GetYaxis()->SetTitleFont(62);
+  grSim1_secP->Draw("AP");
+
+
+  Tally4->cd(3);
+  grSim3_secP->SetMarkerColor(2);
+  grSim3_secP->SetMarkerSize(1.5);
+  grSim3_secP->SetMarkerStyle(7);
+  grSim3_secP->GetXaxis()->SetTitle("z_sim 2nd p (cm)");
+  grSim3_secP->GetYaxis()->SetTitle("z_rec 2nd p (cm)");
+  grSim3_secP->GetXaxis()->SetLabelFont(62);
+  grSim3_secP->GetXaxis()->SetLabelSize(0.047);
+  grSim3_secP->GetXaxis()->SetTitleSize(0.048);
+  grSim3_secP->GetXaxis()->SetTitleFont(62);
+  grSim3_secP->GetYaxis()->SetLabelFont(62);
+  grSim3_secP->GetYaxis()->SetLabelSize(0.047);
+  grSim3_secP->GetYaxis()->SetTitleSize(0.048);
+  grSim3_secP->GetYaxis()->SetTitleFont(62);
+  grSim3_secP->Draw("AP");
+  fun->Draw("same");
+  
+   
+  Tally4->cd(4);
+  grSim2_secP->SetMarkerColor(2);
+  grSim2_secP->SetMarkerSize(1.5);
+  grSim2_secP->SetMarkerStyle(7);
+  //grSim2->GetXaxis()->SetTitle("theta_sim (deg)");
+  //grSim2->GetYaxis()->SetTitle("theta_rec (deg)");
+  grSim2_secP->GetXaxis()->SetTitle("z_Rec - z_sim 2nd p (cm)");
+  grSim2_secP->GetYaxis()->SetTitle("theta_lab 2nd p (deg)"); 
+  grSim2_secP->GetXaxis()->SetLabelFont(62);
+  grSim2_secP->GetXaxis()->SetLabelSize(0.047);
+  grSim2_secP->GetXaxis()->SetTitleSize(0.048);
+  grSim2_secP->GetXaxis()->SetTitleFont(62);
+  grSim2_secP->GetYaxis()->SetLabelFont(62);
+  grSim2_secP->GetYaxis()->SetLabelSize(0.047);
+  grSim2_secP->GetYaxis()->SetTitleSize(0.048);
+  grSim2_secP->GetYaxis()->SetTitleFont(62);
+  grSim2_secP->Draw("AP");
+  //fun->Draw("same");
+
+
+  Tally5->cd(1); 
+  grEx_20Ne->SetStats(false);
+  grEx_20Ne->GetXaxis()->SetTitle("Excitation energy of 20Ne (MeV)");
+  grEx_20Ne->GetYaxis()->SetTitle("counts");
+  grEx_20Ne->SetLineWidth(3);
+  grEx_20Ne->GetXaxis()->SetLabelFont(62);
+  grEx_20Ne->GetXaxis()->SetLabelSize(0.047);
+  grEx_20Ne->GetXaxis()->SetTitleSize(0.048);
+  grEx_20Ne->GetXaxis()->SetTitleFont(62);
+  grEx_20Ne->GetYaxis()->SetLabelFont(62);
+  grEx_20Ne->GetYaxis()->SetLabelSize(0.047);
+  grEx_20Ne->GetYaxis()->SetTitleSize(0.048);
+  grEx_20Ne->GetYaxis()->SetTitleFont(62);
+  grEx_20Ne->Draw();
+
+  Tally5->cd(2);
+  grSecp2->SetMarkerColor(2);
+  grSecp2->SetMarkerSize(1.5);
+  grSecp2->SetMarkerStyle(7);
+  grSecp2->GetXaxis()->SetTitle("Beam sim 2nd p(MeV)");
+  grSecp2->GetYaxis()->SetTitle("BeamRec_20Ne 2nd p(MeV)");
+  grSecp2->GetXaxis()->SetLabelFont(62);
+  grSecp2->GetXaxis()->SetLabelSize(0.047);
+  grSecp2->GetXaxis()->SetTitleSize(0.048);
+  grSecp2->GetXaxis()->SetTitleFont(62);
+  grSecp2->GetYaxis()->SetLabelFont(62);
+  grSecp2->GetYaxis()->SetLabelSize(0.047);
+  grSecp2->GetYaxis()->SetTitleSize(0.048);
+  grSecp2->GetYaxis()->SetTitleFont(62);
+  grSecp2->Draw("AP");
+  fun->Draw("same");
+  
   /*
   Tally2->cd(3);
   grd2->SetMarkerColor(2);
@@ -720,8 +906,6 @@ using namespace std;
   // delete grk,grk1,grk2,grk3,grb,grp1,grp2,grp3,grSX3,grQQQ;
   
   return;
-
-
   
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////
