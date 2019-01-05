@@ -770,8 +770,6 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
   TLorentzVector Parent_LV(0.,0.,0.,Parent_M);  // initialization so use only rest masses
   TLorentzVector L_LV(0.,0.,0.,ML);
   TLorentzVector H_LV(0.,0.,0.,MH);
-
-  //---used for testing----------
   TLorentzVector H1_LV(0.,0.,0.,MH);  
 
   Float_t bx = 0.0;    // beam momentum components for 4-vector
@@ -782,17 +780,16 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
   Float_t ty = 0.0;
   Float_t tz = 0.0;
 
+  // Parent_LV.SetPxPyPzE(qx,qy,qz,Parent_E);  
   Beam_LV.SetPxPyPzE(bx,by,bz,Beam_E);
   Target_LV.SetPxPyPzE(tx,ty,tz,Target_E);
 
   Parent_LV = Beam_LV + Target_LV;
 
-  //-- if you want to extract later a boostVector at the compound system
   ParentE_lab = Parent_LV.E();
   Px_P_lab = Parent_LV.Px();
   Py_P_lab = Parent_LV.Py();
   Pz_P_lab = Parent_LV.Pz();
-  //------------------------------------
   
   boostv = Parent_LV.BoostVector();
 
@@ -816,7 +813,7 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
   Float_t EL_test = (MH/(ML+MH))*(Qv + FinalE*(1-(MB/(ML+MH)))) + ML;
   Float_t EL_test_2 = ((MH+Ex)*(Qe_cm-MH-ML-Ex))/(ML+MH+Ex) + ML;
 
-  //cout << " EL: " << EL << " EL_test: " << EL_test << " EL_test_2: " << EL_test_2 << endl;
+  cout << " EL: " << EL << " EL_test: " << EL_test << " EL_test_2: " << EL_test_2 << endl;
   //////////////////////////////
   
   Float_t PL= sqrt(EL*EL-ML*ML); 
@@ -841,7 +838,7 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
   //iliadis appendix formula: Eheavy at cm
   Double_t EH_test = (ML/(ML+MH))*(Qv + FinalE*(1-(MB/(ML+MH)))) + MH;
 
-  //cout << " EH_test_Lor: " << EH_cm << " EH_Lor - Ex: " << EH_cm - Ex << " EH_test " << EH_test << " Ex: " <<  Ex << endl;
+  cout << " EH_test_Lor: " << EH_cm << " EH_Lor - Ex: " << EH_cm - Ex << " EH_test " << EH_test << " Ex: " <<  Ex << endl;
   
   ////////////////////////////////////
   
@@ -859,16 +856,8 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
 
  //components of 4-momentum vectors in lab frame for heavy particle.
   ee_H_lab = H_LV.E();
-  //cout << " ee_H_lab= " << ee_H_lab << endl;  
-   
-  // Need the momenta as well to create the initial Heavy TLorentzVector at
-  // the SecondProton Function
-  Px_H_lab = H_LV.Px();
-  Py_H_lab = H_LV.Py();
-  Pz_H_lab = H_LV.Pz();
+  cout << " ee_H_lab= " << ee_H_lab << endl;  
 
-   //////////
- 
   //calculating the angles for Lighter & Heavier particles in Lab frame.:   
    phi_L = L_LV.Phi(); 
 
@@ -905,9 +894,24 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
 
    ke_L_lab=ee_L_lab-ML;
    ke_H_lab=ee_H_lab-MH;
+
+
+   Px_H_lab = H_LV.Px();
+   Py_H_lab = H_LV.Py();
+   Pz_H_lab = H_LV.Pz();
+
+   H_LV.Boost(-boostv);
+   cout << " H_LV.E(): " << H_LV.E() << endl;
+   
+   TLorentzVector H_test_LV(0.0,0.0,0.0,MH);
+   H_test_LV.SetPxPyPzE(Px_H_lab, Py_H_lab, Pz_H_lab, ee_H_lab);
+
+   TVector3 boostv2 = H_test_LV.BoostVector();
+   H_test_LV.Boost(-boostv2);
+   cout << " H_test_LV.E(): " << H_test_LV.E() << endl;
+  
    //cout<<"ke_L_lab="<<ke_L_lab<<"ke_H_lab="<<ke_H_lab<<endl;
 
-   
    //---test---------------
    Double_t a = (1+ML/MH);
    Double_t b = -2*sqrt(MB*ML*FinalE)*cos(theta_L)/MH;
@@ -923,14 +927,14 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
    Double_t ke_L_lab_test = s1*s1;
 
    //compare TLorentz vectors results with formulas from iliadis result
-   //cout << " ke_L_lab= " << ke_L_lab << "  " << ke_L_lab_test << endl;
+   cout << " ke_L_lab= " << ke_L_lab << "  " << ke_L_lab_test << endl;
    
    //////////////////
    //from energy conservation:
    Double_t ke_H_lab_test = Qv + FinalE - ke_L_lab_test;
 
    //compare TLorentz vectors results with formulas from iliadis result
-   //cout << " ke_H_lab: " << ke_H_lab << " ke_H_lab - Ex: " << ke_H_lab - Ex << " ke_H_lab_test: " << ke_H_lab_test << " ke_H_lab_test_add_MH_and_Ex: " << ke_H_lab_test + MH + Ex << endl;
+   cout << " ke_H_lab: " << ke_H_lab << " ke_H_lab - Ex: " << ke_H_lab - Ex << " ke_H_lab_test: " << ke_H_lab_test << " ee_H_lab_add_MH_and_Ex: " << ke_H_lab_test + MH + Ex << endl;
 
    ///////////////
   
@@ -938,7 +942,9 @@ bool Simulator::SimThetaPhiE_in(Float_t MinE, Float_t MaxE)
 } 
 ///////////////////////////////////////////////////////////////////
 //bool Simulator::SecondProton(const Float_t ee_H_lab, const Float_t Ex)
-bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
+bool Simulator::SecondProton(const Double_t ParentE_lab, const Double_t Px_P_lab,
+			     const Double_t Py_P_lab, const Double_t Pz_P_lab,
+			     const Float_t ee_H_lab, const Double_t Px_H_lab,
 			     const Double_t Py_H_lab, const Double_t Pz_H_lab,
 			     const Float_t Ex) 
 {
@@ -951,16 +957,16 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
   Float_t phi_h1_cm = phi_h1_cm_deg*TMath::Pi()/180;
 
   //initializing the four-momentum vectors for the Heavy particle & two decay particles.
-  
+  TLorentzVector Par_LV(0.,0.,0.,0.);
   TLorentzVector Hi_LV(0.,0.,0.,MH);
   TLorentzVector H1_LV(0.,0.,0.,ML);
   TLorentzVector H2_LV(0.,0.,0.,MH2);
-  //--used for tests
   TLorentzVector H2_2_LV(0.,0.,0.,MH2);
 
+  Par_LV.SetPxPyPzE(Px_P_lab,Py_P_lab,Pz_P_lab,ParentE_lab);
   Hi_LV.SetPxPyPzE(Px_H_lab,Py_H_lab,Pz_H_lab,ee_H_lab);
 
-  boostv = Hi_LV.BoostVector();
+  boostv = Par_LV.BoostVector();
 
   //boosting back 4-momentum vectors for heavy particle to CM frame
   Hi_LV.Boost(-boostv);
@@ -968,11 +974,11 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
   // components of 4-momentum vectors in CM frame for the heavy particle.
  
   Float_t Ee_cm = Hi_LV.E();
-  //cout << " Ee_cm= " << Ee_cm << endl;
-  if((MH+Ex-ML-MH2)<=0){
-    //cout << "maria watch out " << " Ex " << Ex << endl;
+  cout << " Ee_cm= " << Ee_cm << /*" Ee_cm + Ex: " << Ee_cm + Ex << */endl;
+  /*if((Hi_LV.M()-ML-MH2)<=0){
+    cout << "maria watch out " << " BeamE: " << FinalE << endl;
     return 0;
-    }
+    }*/
   
   //calculating  energy & magnitude of momentum for one of the daughter particle in the cm-frame.                         
   Float_t E1=(ML*ML-MH2*MH2+(Ee_cm)*(Ee_cm))/(2*(Ee_cm));
@@ -982,7 +988,7 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
   //iliadis appendix formula: Elight at cm
   Float_t E1_test = (MH2/(ML+MH2))*(Qv2 + ke_H_lab*(1-(MH/(ML+MH2)))) + ML;
   
-  //cout << " E1: " << E1 << " E1_test: " << E1_test <<  endl;
+  cout << " E1: " << E1 << " E1_test: " << E1_test <<  endl;
   
   Float_t P1= sqrt(E1*E1-ML*ML);                       
   //cout<<"P1="<<P1<<endl;
@@ -1002,7 +1008,7 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
   //iliadis appendix formula: Eheavy at cm
   Double_t EH2_CM_test = (ML/(ML+MH2))*(Qv2 + ke_H_lab*(1-(MH/(ML+MH2)))) + MH2;
 
-  //cout << " EH2_test_CM_Lor: " << EH2_test_CM_Lor <<  " EH2_CM_test " << EH2_CM_test << " Ex: " <<  Ex << endl;
+  cout << " EH2_test_CM_Lor: " << EH2_test_CM_Lor <<  " EH2_CM_test " << EH2_CM_test << " Ex: " <<  Ex << endl;
 
  
   //components of 4-momentum vectors in lab frame for first daughter particle.
@@ -1020,32 +1026,11 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
  //components of 4-momentum vectors in lab frame for second daughter particle.
  
   ee_2_lab = H2_LV.E();
-  //cout << " ee_2_lab: " << ee_2_lab << endl; 
+  cout << " ee_2_lab: " << ee_2_lab << endl; 
 
   //calculating the angles of Daughter nucleus: 
   phi_h1 = H1_LV.Phi(); 
-  phi_h2 = H2_LV.Phi();
-
-  while (phi_h1 < 0) 
-    {
-      phi_h1 += 2* M_PI;
-    }
-      
-   while (phi_h1 > 2*M_PI) 
-    { 
-      phi_h1-= 2*M_PI;
-    } 
-
-   while (phi_h2 < 0) 
-    {
-      phi_h2 += 2* M_PI;
-    }
-      
-   while (phi_h2 > 2*M_PI) 
-    { 
-      phi_h2 -= 2*M_PI;
-    } 
-  
+  phi_h2 = H2_LV.Phi(); 
   theta_h1 = H1_LV.Theta();
   theta_h2 = H2_LV.Theta(); 
   // cout<<"phi_h1="<<phi_h1<<" phi_h2="<<phi_h2<<" theta_h1="<<theta_h1<<" theta_h2="<<theta_h2<<endl;
@@ -1069,14 +1054,14 @@ bool Simulator::SecondProton(const Float_t ee_H_lab, const Double_t Px_H_lab,
 
    Double_t ke_1_lab_test = s1*s1;
    
-   //cout << " ke_1_lab: " << ke_1_lab << " ke_1_lab_test: " << ke_1_lab_test << " Ex: " << Ex << endl;
+   cout << " ke_1_lab: " << ke_1_lab << " ke_1_lab_test: " << ke_1_lab_test << " Ex: " << Ex << endl;
 
    //////////////////
    //from energy conservation:
    Double_t ke_2_lab_test = Qv2 + ke_H_lab - ke_1_lab_test;
 
    //compare TLorentz vectors results with formulas from iliadis result
-   //cout << " ke_2_lab: " << ke_2_lab << " ke_2_lab_test: " << ke_2_lab_test << " ee_2_lab_add_MH2: " << ke_2_lab_test + MH2 << endl;
+   cout << " ke_2_lab: " << ke_2_lab << " ke_2_lab_test: " << ke_2_lab_test << " ee_2_lab_add_MH2: " << ke_2_lab_test + MH2 << endl;
 
    ///////////////
    
@@ -1755,251 +1740,15 @@ bool Simulator::Kinematics_Rec(Float_t& Ex_Heavy_Rec, const Float_t& Ep_Rec,
   if((Parent_LV.M()-M_Light-M_Heavy-Ex_Heavy_Rec + BeamEnergy)<=0)
     cout << " Ex problem: " << Ex_Heavy_Rec << " Beam: " << BeamEnergy << " p_energy: " << ke_L_lab << endl;
 
-  /*if(abs(Ex_Heavy_Rec - Ex) > 2.0)
+  if(abs(Ex_Heavy_Rec - Ex) > 2.0)
     cout << " Ex_Heavy_Rec: " << Ex_Heavy_Rec << " BeamEnergy: " << BeamEnergy 
 	 << " Theta: " << theta_light*180/TMath::Pi() << " p energy at det: " << E_light_si 
-	 << " p at IntP: " << E_light_rxn << " IntP: " << IntPoint << endl;*/
+	 << " p at IntP: " << E_light_rxn << " IntP: " << IntPoint << endl;
 
    return 1;
   
   
 }
-
-bool Simulator::RecBeam_SecProton(Float_t& BeamRec_20Ne, const Float_t& Ep1_Rec, const Float_t& Ep2_Rec,
-				  const Float_t& Theta1_Rec, const Float_t& Theta2_Rec,
-				  const Float_t& Path1_Rec, const Float_t& Path2_Rec, 
-				  const Float_t& Phi1_Rec, const Float_t& Phi2_Rec){
-
-   Double_t E_p1_si = 0.0;
-   Double_t E_p2_si = 0.0;  
-   Double_t d_p1 = 0.0;
-   Double_t d_p2 = 0.0;
-   Double_t E_p1_rxn = 0.0;
-   Double_t E_p2_rxn = 0.0;
-   Double_t theta_p1 = 0.0;
-   Double_t phi_p1 = 0.0;
-   Double_t theta_p2 = 0.0;
-   Double_t phi_p2 = 0.0;
-
-
-  //total energy of proton.
-  Double_t E_p1_tot =0.0;
-  Double_t E_p2_tot =0.0;
-
-  //Total momentum of proton.
-  Double_t P_p1 =0.0;
-  Double_t P_p2 =0.0;
-
-  //Components of 4-vectors for protons.
-  Double_t p1_x =0.0;
-  Double_t p1_y =0.0;
-  Double_t p1_z =0.0;
-  Double_t p2_x =0.0;
-  Double_t p2_y =0.0;
-  Double_t p2_z =0.0;
-
-   
-  TVector3 p1_V(0.,0.,0.);  
-  TVector3 p2_V(0.,0.,0.);  
-  TVector3 SUM_p1p2_V(0.,0.,0.);  
-
-  ///////////////////////////////////////////////////////
-  E_p1_si = Ep1_Rec;
-  E_p2_si = Ep2_Rec;
-
-  d_p1 = Path1_Rec;
-  d_p2 = Path2_Rec;
-
-  theta_p1 = Theta1_Rec;
-  theta_p2 = Theta2_Rec;
-
-  phi_p1 = Phi1_Rec;
-  phi_p2 = Phi2_Rec; 
-
-  E_p1_rxn = proton->GetLookupEnergy(E_p1_si,(-d_p1));
-  E_p2_rxn = proton->GetLookupEnergy(E_p2_si,(-d_p2));
-   
-  E_p1_tot = E_p1_rxn + ML;
-  E_p2_tot = E_p2_rxn + ML;
-
- 
-  //Total momentum of protons.
-  P_p1 = sqrt(E_p1_tot*E_p1_tot - ML*ML);
-  //Components of 4-vectors for proton.
-  p1_x = P_p1*sin(theta_p1)*cos(phi_p1);
-  p1_y = P_p1*sin(theta_p1)*sin(phi_p1);
-  p1_z = P_p1*cos(theta_p1);
-
-  P_p2 = sqrt(E_p2_tot*E_p2_tot - ML*ML);
-  //Components of 4-vectors for proton.
-  p2_x = P_p2*sin(theta_p2)*cos(phi_p2);
-  p2_y = P_p2*sin(theta_p2)*sin(phi_p2);
-  p2_z = P_p2*cos(theta_p2);
-
-  
-  //Four vectors for proton.
-  p1_V.SetXYZ(p1_x,p1_y,p1_z); 
-  p2_V.SetXYZ(p2_x,p2_y,p2_z); 
-  SUM_p1p2_V = p1_V + p2_V;
-
-
-  //Double_t SUM_p1p2_Angle = p1_V.Angle(p2_V);  // angle between p1 and p2 vector
-  Double_t SUM_p1p2_Theta = SUM_p1p2_V.Theta(); // angle between the sum of p1 and p2 with respect to the beam axis z 
-
-  Double_t SUM_p1p2_Mag = SUM_p1p2_V.Mag();
-
-  
-  //cout << "SUM_p1p2_Theta " << SUM_p1p2_Theta*180/TMath::Pi() << " " << "SUM_p1p2_Mag " << SUM_p1p2_Mag << endl;
- 
-  ///////////////////////////////////////////////////
-  
-  Double_t ma = MB;
-  Double_t mb = ML;
-  Double_t mA = MT;
-  Double_t mB = MH2;
-  Double_t Q = MB+MT-(2*ML)-MH2;
-
-  //cout << " Qvalue: " << Q << endl;
-  
-  Double_t cost = cos(SUM_p1p2_Theta);
-  
-  Double_t a = (ma/mB-1);
-  Double_t b = -(sqrt(2*ma)/(mB))*SUM_p1p2_Mag*cost;
-  Double_t c = E_p1_rxn + E_p2_rxn + (SUM_p1p2_Mag*SUM_p1p2_Mag)/(2*mB) - Q;
-  
-  Double_t s1 = (-b + sqrt(b*b-4*a*c))/2./a;  // sqrt(Ea) = sqrt(Beam_KE)
-  Double_t s2 = (-b - sqrt(b*b-4*a*c))/2./a;
-
-  //cout << " s1: " << s1 << " s2: " << s2 << endl;
-  if(s1>s2)
-    std::swap(s1,s2);
-
-  BeamRec_20Ne = s2*s2;
- 
-   return 1;
- }
-
-
-bool Simulator::Reconstruct_20Ne(Float_t& Ex_20Ne, const Float_t& Ep1_Rec, const Float_t& Ep2_Rec,
-				  const Float_t& Theta1_Rec, const Float_t& Theta2_Rec,
-				  const Float_t& Path1_Rec, const Float_t& Path2_Rec, 
-				 const Float_t& Phi1_Rec, const Float_t& Phi2_Rec, const Float_t IntP){
-
-   Double_t E_p1_si = 0.0;
-   Double_t E_p2_si = 0.0;  
-   Double_t d_p1 = 0.0;
-   Double_t d_p2 = 0.0;
-   Double_t E_p1_rxn = 0.0;
-   Double_t E_p2_rxn = 0.0;
-   Double_t theta_p1 = 0.0;
-   Double_t phi_p1 = 0.0;
-   Double_t theta_p2 = 0.0;
-   Double_t phi_p2 = 0.0;
-
-
-  //total energy of proton.
-  Double_t E_p1_tot =0.0;
-  Double_t E_p2_tot =0.0;
-
-  //Total momentum of proton.
-  Double_t P_p1 =0.0;
-  Double_t P_p2 =0.0;
-
-  //Components of 4-vectors for protons.
-  Double_t p1_x =0.0;
-  Double_t p1_y =0.0;
-  Double_t p1_z =0.0;
-  Double_t p2_x =0.0;
-  Double_t p2_y =0.0;
-  Double_t p2_z =0.0;
-  
-  Double_t Beam_E_tot =0.0;
-  Double_t Beam_Pz =0.0;
-  Double_t Target_E =0.0;	 
-
-
-  TLorentzVector Beam_LV(0.,0.,0.,0.);  
-  TLorentzVector Target_LV(0.,0.,0.,0.); 
-  TLorentzVector Parent_LV(0.,0.,0.,0.); 
-
-  TLorentzVector Heavy_LV(0.,0.,0.,0.); 
-   
-  TLorentzVector p1_LV(0.,0.,0.,0.);  
-  TLorentzVector p2_LV(0.,0.,0.,0.);  
-  TLorentzVector SUM_p1p2_LV(0.,0.,0.,0.);  
-
-  Double_t Theta_20Ne = 0.0, Phi_20Ne = 0.0, KE_20Ne = 0.0;
-  ///////////////////////////////////////////////////////
- 
-  E_p1_si = Ep1_Rec;
-  E_p2_si = Ep2_Rec;
-
-  d_p1 = Path1_Rec;
-  d_p2 = Path2_Rec;
-
-  theta_p1 = Theta1_Rec;
-  theta_p2 = Theta2_Rec;
-
-  phi_p1 = Phi1_Rec;
-  phi_p2 = Phi2_Rec;
-  
-  E_p1_rxn = proton->GetLookupEnergy(E_p1_si,(-d_p1));
-  E_p2_rxn = proton->GetLookupEnergy(E_p2_si,(-d_p2));
-   
-  E_p1_tot = E_p1_rxn + ML;
-  E_p2_tot = E_p2_rxn + ML;
-
-  //Total momentum of protons.
-  P_p1 = sqrt(E_p1_tot*E_p1_tot - ML*ML);
-  //Components of 4-vectors for proton.
-  p1_x = P_p1*sin(theta_p1)*cos(phi_p1);
-  p1_y = P_p1*sin(theta_p1)*sin(phi_p1);
-  p1_z = P_p1*cos(theta_p1);
-
-  P_p2 = sqrt(E_p2_tot*E_p2_tot - ML*ML);
-  //Components of 4-vectors for proton.
-  p2_x = P_p2*sin(theta_p2)*cos(phi_p2);
-  p2_y = P_p2*sin(theta_p2)*sin(phi_p2);
-  p2_z = P_p2*cos(theta_p2);
-
-  
-  //Four vectors for proton.
-  p1_LV.SetPxPyPzE(p1_x,p1_y,p1_z,E_p1_tot); 
-  p2_LV.SetPxPyPzE(p2_x,p2_y,p2_z,E_p2_tot); 
-  SUM_p1p2_LV = p1_LV + p2_LV;
-
-
-  Double_t BeamEnergy = IonInGas->GetLookupEnergy(MaxBeamEnergy,(La-IntP));
-  Beam_E_tot = BeamEnergy + MB;
-  Beam_Pz = sqrt(Beam_E_tot*Beam_E_tot - MB*MB);
-  Target_E = MT;
-
-  //four vectors for beam & Target
-  Beam_LV.SetPxPyPzE(0,0,Beam_Pz,Beam_E_tot);
-  Target_LV.SetPxPyPzE(0,0,0,Target_E);
-  
-  //four vectors for parents 
-  Parent_LV = Beam_LV + Target_LV;  // Parent(compound) = Beam + target (e.g. 22Mg = 18Ne + 4He)
-
-  //four vectors for Sodium 21Na
-  Heavy_LV = Parent_LV-p1_LV-p2_LV;        // Heavy outgoing = Parent(compound)-light (e.g. 20Ne = 22Mg - 2p)
-
- 
-  Theta_20Ne = Heavy_LV.Theta()*180/TMath::Pi();
-  Phi_20Ne = Heavy_LV.Phi()*180/TMath::Pi();
-  
-  //Kinetic energy and Excitation energy of the Heavy Outgoing.
-
-  KE_20Ne = Heavy_LV.E()- Heavy_LV.M(); // .M()=sqrt(E^2-p^2) .E()=4th component of 4-vector, Energy
-  Ex_20Ne = Heavy_LV.M() - MH2;
-
- 
-  ///////////////////////////////////////////////////
-
-  
-   return 1;
- }
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
