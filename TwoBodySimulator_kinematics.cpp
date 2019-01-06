@@ -471,10 +471,10 @@ Simulator::Simulator(string FileELoss1,string FileELoss2,string FileELoss3,strin
   Heavy_ion = new EnergyLoss(FileELoss3,MH);
   //cout << "loaded Heavy_ion in gas"<<endl ;
 
-  Heavy_ion2 = new EnergyLoss(FileELoss5,MH2);
+  Heavy_ion2 = new EnergyLoss(FileELoss4,MH2);
   //cout << "loaded Heavy_ion in gas"<<endl ;
  
-  proton_Si = new EnergyLoss(FileELoss4,ML); 
+  proton_Si = new EnergyLoss(FileELoss5,ML); 
   //cout << "loaded Proton_Si in Silicon"<<endl ; 
 
    //Distances:
@@ -593,10 +593,10 @@ bool Simulator::GenerateEvent(CS *cross)
   FinalE = rand->Uniform(MinBeamEnergy, MaxBeamEnergy);
   //cout << "FinalE = " << FinalE  << " " << MinBeamEnergy << " " <<MaxBeamEnergy << endl;
 
-  //Float_t crossSection = rand->Uniform(0,1);
+  // Float_t crossSection = rand->Uniform(0,1);
 
   //if (crossSection > cross->CrossSection(FinalE))
-  //  return false;
+  // return false;
   
   
   // excited states of 21Na:
@@ -1564,7 +1564,7 @@ bool Simulator::DrawLines(Int_t Det_ID, Int_t m, Float_t& Wx, Float_t& Wy, Float
 ////////////////////////////--------Reconstruction Point-----------//////////////////////////////////////////////////////////////////////////////
 
 bool Simulator::Simulation_Parameters(Float_t& z_SIM, Float_t& Path_sim, Float_t& EL_final,
-				      const Float_t& X, const Float_t& Y, const Float_t& Z)
+				      const Float_t& Ep_kin, const Float_t& X, const Float_t& Y, const Float_t& Z)
 {
     z_SIM = zr; // Simulation generated IntPoint
 
@@ -1577,7 +1577,7 @@ bool Simulator::Simulation_Parameters(Float_t& z_SIM, Float_t& Path_sim, Float_t
     //and by calculating the "real" path of the particle based on 
     //the geometrically generated parameters.
     //P.S. we have to assume that we know from SRIM the Eloss of the protons in our gas
-    EL_final = proton->GetLookupEnergy(ke_L_lab, Path_sim);
+    EL_final = proton->GetLookupEnergy(Ep_kin, Path_sim);
     
     return 1;
   
