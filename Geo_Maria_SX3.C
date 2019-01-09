@@ -14,6 +14,10 @@
   CS *cross = new CS;
   cross->ReadFile("cross.txt");
 
+  Strag *straggling = new Strag;
+  straggling->ReadFile("18Nesrim/18Ne.txt");
+  
+  
    //Mass of the Beam and target
   float mB = 16767.09961; //mass of 18Ne
   float mT = 3727.37892;  //mass of He-4.  
@@ -47,6 +51,19 @@
   World->SetPoint(0,15,15,-5);
   World->SetPoint(1,-15,-15,35);
 
+  TGraph2D *Beam_xyz = new TGraph2D();
+  Beam_xyz->SetMarkerColor(2);
+  Beam_xyz->SetMarkerSize(1);
+  Beam_xyz->SetMarkerStyle(7);
+
+  TGraph *Beam_xyz_profile = new TGraph();
+  Beam_xyz_profile->SetMarkerColor(2);
+  Beam_xyz_profile->SetMarkerSize(1);
+  Beam_xyz_profile->SetMarkerStyle(7);
+
+  TGraph *Beam_xz = new TGraph();
+  TGraph *Beam_yz = new TGraph();
+  
   TGraph2D* SX3_lines = new TGraph2D();
   TGraph2D* QQQ_lines = new TGraph2D();
   TGraph2D* MISS_lines = new TGraph2D();
@@ -67,7 +84,7 @@
   TGraph2D* SX3_lines_2p = new TGraph2D();
   TGraph2D* QQQ_lines_2p = new TGraph2D(); 
   TGraph *qqq_profile_2p = new TGraph();
-  
+
   SX3_lines_2p->SetMarkerColor(1);
   SX3_lines_2p->SetMarkerSize(1);
   SX3_lines_2p->SetMarkerStyle(3);
@@ -98,13 +115,14 @@
   int nnn =0, nnn2;
   int mmm =0, mmm2;
   int na =0,ma=0;
+  int beam_xyz=0, beam_xy=0, b_xz=0, b_yz=0;
   ///////////////////////////////////////////
  
   int i=0;
   const Int_t k=300;
   
    while(i<k){
-     if(!S->GenerateEvent(cross))
+     if(!S->GenerateEvent(cross,straggling))
        continue;
      
 
@@ -121,7 +139,18 @@
 	 continue;
        }
      }
-    
+
+
+     //---------Beam Profile graphs---------------
+     Beam_xyz->SetPoint(beam_xyz,S->xr,S->yr,S->zr);
+     beam_xyz++;
+     Beam_xyz_profile->SetPoint(beam_xy,S->xr,S->yr);
+     beam_xy++;
+
+     Beam_xz->SetPoint(b_xz,S->zr,S->xr);
+     b_xz++;
+     Beam_yz->SetPoint(b_yz,S->zr,S->yr);
+     b_yz++;
      
 
       if(S->GetSX3Coord(X, Y, Z, Xpc, Ypc, Zpc, S->theta_L, S->phi_L)) {
@@ -174,6 +203,7 @@
   TCanvas* Display2 = new TCanvas("SX3 Geo","SX3 Geo",0,0,800,800);
   Display2->cd();
   World->Draw("p");
+  Beam_xyz->Draw("p same");
   SX3_lines->Draw("p same");
   QQQ_lines->Draw("p same");
   SX3_lines_2p->Draw("p same");
@@ -198,6 +228,27 @@
   qqq_profile_2p->SetMarkerSize(1);
   qqq_profile_2p->SetMarkerStyle(3);
   qqq_profile_2p->Draw("P same");
-  
+  Beam_xyz_profile->Draw("P same");
 
+
+  TCanvas *c2 = new TCanvas("c2","XZ - YZ distribution",300,100,1500,1500);
+  c2->Divide(2,1);
+  c2->cd(1);
+  Beam_xz->SetTitle("XZ distribution");
+  Beam_xz->GetXaxis()->SetTitle("Z coord");
+  Beam_xz->GetYaxis()->SetTitle("X coord");
+  Beam_xz->SetMarkerColor(6);
+  Beam_xz->SetMarkerSize(1);
+  Beam_xz->SetMarkerStyle(7);
+  Beam_xz->Draw("AP");
+
+  c2->cd(2);
+  Beam_yz->SetTitle("YZ distribution");
+  Beam_yz->GetXaxis()->SetTitle("Z coord");
+  Beam_yz->GetYaxis()->SetTitle("Y coord");
+  Beam_yz->SetMarkerColor(6);
+  Beam_yz->SetMarkerSize(1);
+  Beam_yz->SetMarkerStyle(7);
+  Beam_yz->Draw("AP");
+  
 }
