@@ -44,19 +44,25 @@ using namespace std;
 //int main()
 {
   gSystem->Load("TwoBodySimulator_kinematics_cpp.so");
-  //gSystem->Load("TwoBodySimulator_test_finalM2_cpp.so");
-
-  //cout << " malakies1 " << endl;
  
   
   Simulator* S = new Simulator("18Nesrim/18Ne_in_HeCO2_356Torr_18Nerun_09122018.eloss","18Nesrim/H_in_HeCO2_379Torr_allruns_09122018.eloss","18Nesrim/21Na_in_HeCO2_356Torr_18Nerun_10082018.eloss","18Nesrim/20Ne_in_HeCO2_356Torr_18Nerun_12242018.eloss","H_in_Si.txt","WorldCoordinates2018Dec4","pcr_list_07192018.dat");   //uses the new zr-offsets for the SX3s 2.5 & 14.9 cm 
 
+  Double_t dist = 40.0;
+  Double_t y_s = 0.0;
+  Double_t z_s = 0.0;
   
- 
   CS *cross = new CS;
   cross->ReadFile("cross.txt");
   //cross->CrossSection(18.0);
 
+  Strag *straggling = new Strag;
+  straggling->ReadFile("18Nesrim/18Ne.txt");
+  straggling->Range_Straggling(dist,y_s,z_s);
+  cout << dist << " " << y_s/10.0 << " " << z_s/10.0 << endl;
+
+
+  
   //--------- Energy Loss Tables -----------------------///
   S->IonInGas->InitializeLookupTables(90.0,760.0,0.02,0.04);    
   S->Heavy_ion->InitializeLookupTables(90.0,760.0,0.02,0.04);  
@@ -80,12 +86,13 @@ using namespace std;
   Tally5->Divide(2,2);
 
   TCanvas* Tally6=new TCanvas("Ne6","Ne6",300,100,1500,1500);
-  Tally6->Divide(3,1);
+  Tally6->Divide(2,2);
 
 
   TH1F* grb1 = new TH1F("grb1","",100,0,100);
   TH1F* grb2 = new TH1F("grb2","",100,0,100);
   TH1F* grb3 = new TH1F("grb3","",100,0,100);
+  TH1F* grBeamRec = new TH1F("grBeamRec","",120,0,6);
   TH1F* grbf = new TH1F("grbf","",100,0,100);
   TH1F* grbfa = new TH1F("grbfa","",100,0,100);
   TH1F* grbfb = new TH1F("grbfb","",100,0,100);
@@ -93,9 +100,9 @@ using namespace std;
   TH1F* grRing2 = new TH1F("grRing2","",100,0,100);
 
   
-  TH1F* grEx = new TH1F("grEx","",100,-10,10);
-  TH1F* grEx_20Ne = new TH1F("grEx_20Ne","",100,-10,10);
-  TH1F* grEx_2_21Na = new TH1F("grEx_2_21Na","",100,-10,10);
+  TH1F* grEx = new TH1F("grEx","",100,-10,15);
+  TH1F* grEx_20Ne = new TH1F("grEx_20Ne","",100,-10,15);
+  TH1F* grEx_2_21Na = new TH1F("grEx_2_21Na","",100,-10,15);
 
 
   TGraph* grb = new TGraph();
@@ -201,7 +208,7 @@ using namespace std;
   int Secp=0, Secp2=0, Secp3=0;
 
   int j=0;
-  const Int_t n=500;
+  const Int_t n=1000;
   
   TRandom3 *rand_ = new TRandom3();
  
@@ -214,11 +221,11 @@ using namespace std;
 
     grb1->Fill(S->FinalE);  // distribution of Beam-Reaction Energies: "evenly" distributed between MaxE,MinE at the GenerateEvent()
 
-    if(!S->GenerateEvent(cross)){
+    if(!S->GenerateEvent(cross,straggling)){
       FailCount++;        // check if for some reason events are not generated, FailCount should be zero if no cross section is involved
       continue;
     }
-
+    
     Num_Events++;
     
     //if(S->FinalE > 22)
@@ -275,7 +282,8 @@ using namespace std;
 
    // Beam - Reaction Energy for events that make it to Si-detectors after all the excluded events
    // compare grb2 to grb1 for the efficiency of the detector
-   grb2->Fill(S->FinalE);   
+   grb2->Fill(S->FinalE);
+   
      
     if(EL_final > 0) // 
      {
@@ -311,14 +319,17 @@ using namespace std;
    K_brr_sim = S->IonInGas->GetLookupEnergy(e, Beam_Path_sim);
 
    //compare reconstructed to simulated values
+
+   grBeamRec->Fill(K_brr_rec*4.0/22.0);
+   
    grBeam -> SetPoint(beam_p,K_brr_sim,K_brr_rec);
    beam_p++;
 
    grSim1->SetPoint(sim_p1,abs(z_br-z_sim),Zp);  
    sim_p1++;	
 
-   //grSim2->SetPoint(sim_p2,abs(z_br-z_sim),S->theta_L*180/TMath::Pi()); 
-   grSim2->SetPoint(sim_p2,S->theta_L*180/TMath::Pi(),theta_rec*180/TMath::Pi());  
+   grSim2->SetPoint(sim_p2,abs(z_br-z_sim),S->theta_L*180/TMath::Pi()); 
+   //grSim2->SetPoint(sim_p2,S->theta_L*180/TMath::Pi(),theta_rec*180/TMath::Pi());  
    sim_p2++;
 
    grSim3->SetPoint(sim_p3,z_sim,z_br);  
@@ -457,8 +468,7 @@ using namespace std;
    grSim1_secP->SetPoint(sim_p1_2,abs(z_br2-z_sim2),Zp2);  
    sim_p1_2++;	
 
-   //grSim2_secP->SetPoint(sim_p2_2,abs(z_br2-z_sim2),S->theta_h1*180/TMath::Pi()); 
-   grSim2->SetPoint(sim_p2,S->theta_L*180/TMath::Pi(),theta_rec*180/TMath::Pi());  
+   grSim2_secP->SetPoint(sim_p2_2,abs(z_br2-z_sim2),S->theta_h1*180/TMath::Pi()); 
    sim_p2_2++;
 
    grSim3_secP->SetPoint(sim_p3_2,z_sim2,z_br2);  
@@ -592,30 +602,24 @@ using namespace std;
   leg2->AddEntry(grbfb,"SX3s","l");
   leg2->Draw(); 
 
+  Tally1->cd(4); 
+  grb3->SetStats(false);
+  grb3->GetXaxis()->SetTitle("reaction energy (MeV)");
+  grb3->GetYaxis()->SetTitle("Efficiency 2nd p");
+  // grbf->GetYaxis()->SetTitleOffset(1.2);
+  grb3->SetLineWidth(3);
+  grb3->GetXaxis()->SetLabelFont(62);
+  grb3->GetXaxis()->SetLabelSize(0.047);
+  grb3->GetXaxis()->SetTitleSize(0.048);
+  grb3->GetXaxis()->SetTitleFont(62);
+  grb3->GetYaxis()->SetLabelFont(62);
+  grb3->GetYaxis()->SetLabelSize(0.047);
+  grb3->GetYaxis()->SetTitleSize(0.048);
+  grb3->GetYaxis()->SetTitleFont(62);
+  grb3->Divide(grb1);
+  grb3->Draw();
 
-  Tally1->cd(4);
-  grResprtheta2->SetMarkerColor(2);
-  grResprtheta2->SetMarkerSize(1.5);
-  grResprtheta2->SetMarkerStyle(7);
-  //grResprtheta2->SetTitle("18Ne(a,p)21Na, Ebeam=10-30MeV, Pressure=379Torr");
-  grResprtheta2->SetTitle("18Ne(a,p)21Na, Pressure=379Torr");
-  grResprtheta2->GetXaxis()->SetTitle("Theta_lab (deg)");
-  grResprtheta2->GetYaxis()->SetTitle("Ep_final_sim (MeV)");
-  grResprtheta2->GetXaxis()->SetLimits(0,180);
-  grResprtheta2->GetXaxis()->SetLabelFont(62);
-  grResprtheta2->GetXaxis()->SetLabelSize(0.047);
-  grResprtheta2->GetXaxis()->SetTitleSize(0.048);
-  grResprtheta2->GetXaxis()->SetTitleFont(62);
-  grResprtheta2->GetYaxis()->SetLabelFont(62);
-  grResprtheta2->GetYaxis()->SetLabelSize(0.047);
-  grResprtheta2->GetYaxis()->SetTitleSize(0.048);
-  grResprtheta2->GetYaxis()->SetTitleFont(62);
-  grResprtheta2->Draw("AP");
-  grResprtheta1->SetMarkerColor(1);
-  grResprtheta1->SetMarkerSize(1.0);
-  grResprtheta1->SetMarkerStyle(3);  
-  grResprtheta1->Draw("P same"); 
-
+  
   
   Tally2->cd(1);
   grBeam->SetMarkerColor(2);
@@ -749,21 +753,29 @@ using namespace std;
 
 
   Tally3->cd(4);
-  grSecp->SetMarkerColor(2);
-  grSecp->SetMarkerSize(1.5);
-  grSecp->SetMarkerStyle(7);
-  grSecp->GetXaxis()->SetTitle("theta proton1 (deg)");
-  grSecp->GetYaxis()->SetTitle("theta proton2 (deg)");
-  grSecp->GetXaxis()->SetLabelFont(62);
-  grSecp->GetXaxis()->SetLabelSize(0.047);
-  grSecp->GetXaxis()->SetTitleSize(0.048);
-  grSecp->GetXaxis()->SetTitleFont(62);
-  grSecp->GetYaxis()->SetLabelFont(62);
-  grSecp->GetYaxis()->SetLabelSize(0.047);
-  grSecp->GetYaxis()->SetTitleSize(0.048);
-  grSecp->GetYaxis()->SetTitleFont(62);
-  grSecp->Draw("AP");
-  
+  grResprtheta2->SetMarkerColor(2);
+  grResprtheta2->SetMarkerSize(1.5);
+  grResprtheta2->SetMarkerStyle(7);
+  //grResprtheta2->SetTitle("18Ne(a,p)21Na, Ebeam=10-30MeV, Pressure=379Torr");
+  grResprtheta2->SetTitle("18Ne(a,p)21Na, Pressure=379Torr");
+  grResprtheta2->GetXaxis()->SetTitle("Theta_lab (deg)");
+  grResprtheta2->GetYaxis()->SetTitle("Ep_final_sim (MeV)");
+  grResprtheta2->GetXaxis()->SetLimits(0,180);
+  grResprtheta2->GetXaxis()->SetLabelFont(62);
+  grResprtheta2->GetXaxis()->SetLabelSize(0.047);
+  grResprtheta2->GetXaxis()->SetTitleSize(0.048);
+  grResprtheta2->GetXaxis()->SetTitleFont(62);
+  grResprtheta2->GetYaxis()->SetLabelFont(62);
+  grResprtheta2->GetYaxis()->SetLabelSize(0.047);
+  grResprtheta2->GetYaxis()->SetTitleSize(0.048);
+  grResprtheta2->GetYaxis()->SetTitleFont(62);
+  grResprtheta2->Draw("AP");
+  grResprtheta1->SetMarkerColor(1);
+  grResprtheta1->SetMarkerSize(1.0);
+  grResprtheta1->SetMarkerStyle(3);  
+  grResprtheta1->Draw("P same"); 
+
+
   
   Tally4->cd(1);
   grBeam_secP->SetMarkerColor(2);
@@ -907,25 +919,41 @@ using namespace std;
   grSecp3->GetYaxis()->SetTitleFont(62);
   grSecp3->Draw("AP");
 
-  Tally6->cd(1); 
-  grb3->SetStats(false);
-  grb3->GetXaxis()->SetTitle("reaction energy (MeV)");
-  grb3->GetYaxis()->SetTitle("Efficiency 2nd p");
+
+  Tally6->cd(1);
+  grSecp->SetMarkerColor(2);
+  grSecp->SetMarkerSize(1.5);
+  grSecp->SetMarkerStyle(7);
+  grSecp->GetXaxis()->SetTitle("theta proton1 (deg)");
+  grSecp->GetYaxis()->SetTitle("theta proton2 (deg)");
+  grSecp->GetXaxis()->SetLabelFont(62);
+  grSecp->GetXaxis()->SetLabelSize(0.047);
+  grSecp->GetXaxis()->SetTitleSize(0.048);
+  grSecp->GetXaxis()->SetTitleFont(62);
+  grSecp->GetYaxis()->SetLabelFont(62);
+  grSecp->GetYaxis()->SetLabelSize(0.047);
+  grSecp->GetYaxis()->SetTitleSize(0.048);
+  grSecp->GetYaxis()->SetTitleFont(62);
+  grSecp->Draw("AP");
+  
+  Tally6->cd(2); 
+  grBeamRec->SetStats(false);
+  grBeamRec->GetXaxis()->SetTitle("reaction energy at cm (MeV)");
+  grBeamRec->GetYaxis()->SetTitle("counts");
   // grbf->GetYaxis()->SetTitleOffset(1.2);
-  grb3->SetLineWidth(3);
-  grb3->GetXaxis()->SetLabelFont(62);
-  grb3->GetXaxis()->SetLabelSize(0.047);
-  grb3->GetXaxis()->SetTitleSize(0.048);
-  grb3->GetXaxis()->SetTitleFont(62);
-  grb3->GetYaxis()->SetLabelFont(62);
-  grb3->GetYaxis()->SetLabelSize(0.047);
-  grb3->GetYaxis()->SetTitleSize(0.048);
-  grb3->GetYaxis()->SetTitleFont(62);
-  grb3->Divide(grb1);
-  grb3->Draw();
+  grBeamRec->SetLineWidth(3);
+  grBeamRec->GetXaxis()->SetLabelFont(62);
+  grBeamRec->GetXaxis()->SetLabelSize(0.047);
+  grBeamRec->GetXaxis()->SetTitleSize(0.048);
+  grBeamRec->GetXaxis()->SetTitleFont(62);
+  grBeamRec->GetYaxis()->SetLabelFont(62);
+  grBeamRec->GetYaxis()->SetLabelSize(0.047);
+  grBeamRec->GetYaxis()->SetTitleSize(0.048);
+  grBeamRec->GetYaxis()->SetTitleFont(62);
+  grBeamRec->Draw();
   
   
-  Tally6->cd(2);
+  Tally6->cd(3);
   grd2->SetMarkerColor(2);
   grd2->SetMarkerSize(1.5);
   grd2->SetMarkerStyle(7);
@@ -953,7 +981,7 @@ using namespace std;
   leg4->Draw(); 
   
 
-  Tally6->cd(3); 
+  Tally6->cd(4); 
   grRec_q->SetMarkerColor(2);
   grRec_q->SetMarkerSize(1.0);
   grRec_q->SetMarkerStyle(7); 
@@ -983,7 +1011,7 @@ using namespace std;
   leg5->Draw();
 
   
- 
+  Tally1->SaveAs("nocross1.png");
 
   
   return;
