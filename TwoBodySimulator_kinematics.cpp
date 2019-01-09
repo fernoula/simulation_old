@@ -25,9 +25,11 @@
 
 
 #include "test.cpp"
+#include "straggling.cpp"
 #include "thetaphi.cpp"
 #include "qqq_hit.cpp"
 #include "TwoBodySimulator.hpp"
+
 
 
 using namespace std;
@@ -563,40 +565,19 @@ bool Simulator::SetMasses(Float_t mB,Float_t mT,Float_t mL,Float_t mH, Float_t m
 
 
 
-bool Simulator::GenEventwithCrossSection(CS cross)
-{
-
-
-  FinalE = rand->Uniform(MinBeamEnergy, MaxBeamEnergy);
-  Float_t crossSection = rand->Uniform(0,1);
-
-  if (crossSection > cross.CrossSection(FinalE))
-    return false;
-
-  dist = IonInGas->GetDistance(MaxBeamEnergy, FinalE, 0.1, 550); // uses GetDistance function from EnergyLoss class for the Ion of the beam 
-
-  if (dist > La)
-    return false;
-    //cout << "dist = " << dist << endl;
-  
-  zr = (La-dist);
-  return true;
-
-}
-
 // This event generator is based on a flat energy distribution from a MinE to a MaxE.
 // Generates a random final energy at the reaction point after the Ion of the beam has lost energy in the gas. 
 
-bool Simulator::GenerateEvent(CS *cross)
+bool Simulator::GenerateEvent(CS *cross, Strag *straggle)
 {
 
   FinalE = rand->Uniform(MinBeamEnergy, MaxBeamEnergy);
   //cout << "FinalE = " << FinalE  << " " << MinBeamEnergy << " " <<MaxBeamEnergy << endl;
 
-  // Float_t crossSection = rand->Uniform(0,1);
+  Float_t crossSection = rand->Uniform(0,1);
 
-  //if (crossSection > cross->CrossSection(FinalE))
-  // return false;
+  if (crossSection > cross->CrossSection(FinalE))
+    return false;
   
   
   // excited states of 21Na:
@@ -606,24 +587,51 @@ bool Simulator::GenerateEvent(CS *cross)
   Ex = Ex_Heavy[RandomIndex];
 
   //cout << " Index: " << RandomIndex << " Ex: " << Ex << endl;
-
-
+  
   dist = IonInGas->GetDistance(MaxBeamEnergy, FinalE, 0.1, 550); // uses GetDistance function from EnergyLoss class for the Ion of the beam 
 
+  //cout << " dist1: " << dist << endl;
+  
+  Double_t y_str =0.0, z_str =0.0;
+  
+  straggle->Range_Straggling(dist,y_str,z_str);
+  y_str = y_str/10.0; // convert them to cm from mm
+  z_str = z_str/10.0;
+
+ 
+  dist = rand->Gaus(dist,z_str);
+  
+  //cout << " dist2: " << dist << " z_str: " << z_str << endl;
+  
   if (dist > La){
     return 0;
     //cout << "dist = " << dist << endl;
   }
-  zr =(La-dist);
+  zr =(La-dist); 
+ 
+  xr = rand->Uniform(-0.5,+0.5);
+  yr = rand->Uniform(-0.5,+0.5);
 
-  //add xr, yr to be created with a random distribution +/- 1cm for our beam spot
+  // xr = 0.0;
+  // yr = 0.0;
+  //cout << " xr: " <<  xr << " yr: " << yr << endl;
+  
+  xr = rand->Gaus(xr,y_str);
+  yr = rand->Gaus(yr,y_str);
 
-  xr = rand->Uniform(-1,+1);
+  //cout << " xr: " << xr << " yr: " << yr
+  //    << " dist: " << dist1 << " y_str: " << y_str << endl;
+  
+  // add xr, yr to be created with a random distribution +/- 1cm for our beam spot
+  /*xr = rand->Uniform(-1,+1);
   yr = rand->Uniform(-1,+1);
-
+  
   // add an uncertainty to the IntPoint zr as well:
-  zr = zr + rand->Uniform(-1,+1);
+  zr = zr + rand->Uniform(-1,+1);*/
 
+  //cout << " dist: " << dist << " zr_tot: " << zr << " zr_str: " << z_str << " zr: " << zr - z_str
+  //     << " xr: " << xr << " yr: " << yr << " y_str: " << y_str << endl; 
+  
   return 1;
 }
 
