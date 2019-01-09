@@ -68,9 +68,7 @@ public:
 
   ~Simulator();
 
-  bool GenEventwithCrossSection(CS cross);
-
-  bool GenerateEvent(CS *cross);
+  bool GenerateEvent(CS *cross, Strag *straggle);
 
   bool SetBeamEnergyRange(Float_t MinE, Float_t MaxE);
 
